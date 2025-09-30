@@ -4,8 +4,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Use the Accelerate URL (443) at runtime
+  url       = env("PRISMA_ACCELERATE_URL")
+  // Use the direct Postgres URL for migrations
+  directUrl = env("DATABASE_URL")
 }
 
 enum EventType {
