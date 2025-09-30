@@ -1,0 +1,100 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EventType {
+  CHIP_WAR
+  BOSS_HUNT
+  SUDDEN_PVP
+}
+
+model User {
+  id          String       @id @default(cuid())
+  discordId   String       @unique
+  name        String?
+  image       String?
+  isAdmin     Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  attendances Attendance[]
+
+  // NextAuth relations
+  accounts Account[]
+  sessions Session[]
+}
+
+model Event {
+  id          String       @id @default(cuid())
+  type        EventType
+  title       String?
+  scheduledAt DateTime?
+  points      Int          @default(1)
+  createdAt   DateTime     @default(now())
+  attendances Attendance[]
+  codes       Code[]
+}
+
+model Code {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+  expiresAt DateTime?
+  maxUses   Int?
+  usedCount Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, eventId])
+}
+
+/* ---------- NextAuth required models ---------- */
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
